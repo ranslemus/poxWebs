@@ -56,86 +56,116 @@
     setInterval(updateText, 4000);
 
 
-     // Device detection
-     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    // Device Detection
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-     // Buttons
-     const uploadImageBtn = document.getElementById('uploadImageBtn');
-     const cameraBtn = document.getElementById('cameraBtn');
-     const imagePreview = document.getElementById('imagePreview');
-     const previewImage = document.getElementById('previewImage');
-     const cameraStream = document.getElementById('cameraStream');
-     const video = document.getElementById('video');
-     const captureBtn = document.getElementById('captureBtn');
+    // Button Elements
+    const uploadImageBtn = document.getElementById('uploadImageBtn');
+    const cameraBtn = document.getElementById('cameraBtn');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImage = document.getElementById('previewImage');
+    const cameraStream = document.getElementById('cameraStream');
+    const video = document.getElementById('video');
+    const captureBtn = document.getElementById('captureBtn');
 
-     // Event listeners for buttons
-     uploadImageBtn.addEventListener('click', () => {
-         const fileInput = document.createElement('input');
-         fileInput.type = 'file';
-         fileInput.accept = 'image/*'; // Allow images only
-         fileInput.click();
+    // Function to send image to backend and get prediction
+    async function sendImage(imageBlob) {
+        const formData = new FormData();
+        formData.append('image', imageBlob, 'uploaded_image.png');
 
-         fileInput.addEventListener('change', () => {
-             const file = fileInput.files[0];
-             if (file) {
-                 const reader = new FileReader();
-                 reader.onload = function (e) {
-                     previewImage.src = e.target.result;
-                     imagePreview.style.display = 'block';
-                 };
-                 reader.readAsDataURL(file);
-             }
-         });
-     });
+        try {
+            const response = await fetch('http://localhost:5000/predict', {
+                method: 'POST',
+                body: formData
+            });
 
-     cameraBtn.addEventListener('click', () => {
-         if (isMobile) {
-             // For Mobile, directly open the camera using input
-             const mobileInput = document.createElement('input');
-             mobileInput.type = 'file';
-             mobileInput.accept = 'image/*';
-             mobileInput.capture = 'camera'; // Request camera
-             mobileInput.click();
+            const result = await response.json();
 
-             mobileInput.addEventListener('change', () => {
-                 const file = mobileInput.files[0];
-                 if (file) {
-                     const reader = new FileReader();
-                     reader.onload = function (e) {
-                         previewImage.src = e.target.result;
-                         imagePreview.style.display = 'block';
-                     };
-                     reader.readAsDataURL(file);
-                 }
-             });
-         } else {
-             // For PC, show video stream
-             cameraStream.style.display = 'block';
-             navigator.mediaDevices.getUserMedia({ video: true })
-                 .then((stream) => {
-                     video.srcObject = stream;
-                 })
-                 .catch((err) => {
-                     console.error('Error accessing camera: ', err);
-                 });
-         }
-     });
+            if (response.ok) {
+                displayPrediction(result);
+            } else {
+                alert('Error: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while making the prediction.');
+        }
+    }
 
-     captureBtn.addEventListener('click', () => {
-         const canvas = document.createElement('canvas');
-         const context = canvas.getContext('2d');
-         canvas.width = video.videoWidth;
-         canvas.height = video.videoHeight;
-         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-         const imageData = canvas.toDataURL('image/png');
+    // Function to display prediction results
+    function displayPrediction(result) {
+        const predictionElement = document.getElementById('prediction');
+        predictionElement.innerHTML = `
+            <p><strong>Predicted Class:</strong> ${result.prediction}</p>
+            <p><strong>Confidence:</strong> ${(result.confidence * 100).toFixed(2)}%</p>
+        `;
+    }
 
-         previewImage.src = imageData;
-         imagePreview.style.display = 'block';
+    // Event Listener for Upload Image Button
+    uploadImageBtn.addEventListener('click', () => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*'; // Allow images only
+        fileInput.click();
 
-         // Stop the video stream after capture
-         const stream = video.srcObject;
-         const tracks = stream.getTracks();
-         tracks.forEach(track => track.stop());
-         video.srcObject = null;
-         cameraStream.style.display = 'none';
-     });
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                previewImage.src = URL.createObjectURL(file);
+                imagePreview.style.display = 'block';
+                sendImage(file);
+            }
+        });
+    });
+
+    // Event Listener for Camera Button
+    cameraBtn.addEventListener('click', () => {
+        if (isMobile) {
+            // For Mobile Devices: Open Camera
+            const mobileInput = document.createElement('input');
+            mobileInput.type = 'file';
+            mobileInput.accept = 'image/*';
+            mobileInput.capture = 'camera'; // Request camera
+            mobileInput.click();
+
+            mobileInput.addEventListener('change', () => {
+                const file = mobileInput.files[0];
+                if (file) {
+                    previewImage.src = URL.createObjectURL(file);
+                    imagePreview.style.display = 'block';
+                    sendImage(file);
+                }
+            });
+        } else {
+            // For Desktop Devices: Show Video Stream
+            cameraStream.style.display = 'block';
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    video.srcObject = stream;
+                })
+                .catch((err) => {
+                    console.error('Error accessing camera:', err);
+                });
+        }
+    });
+
+    // Event Listener for Capture Button
+    captureBtn.addEventListener('click', () => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+            previewImage.src = URL.createObjectURL(blob);
+            imagePreview.style.display = 'block';
+            sendImage(blob);
+        }, 'image/png');
+
+        // Stop the Video Stream After Capture
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+        video.srcObject = null;
+        cameraStream.style.display = 'none';
+    });

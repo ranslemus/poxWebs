@@ -1,15 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Existing Head Content -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Poxly</title>
     <link rel="stylesheet" href="../styles.css">
     <link rel="icon" type="image/x-icon" href="../images/icons/poxly_favicon.png">
+    <!-- Include your data.js script -->
+    <script src="data.js" defer></script>
 </head>
 <style>
     .imagePreviews{
         margin:2rem;
+    }
+    /* Add styles for prediction display */
+    #prediction {
+        margin-top: 1rem;
+        font-size: 1.2rem;
+        color: #333;
     }
 </style>
 <body>
@@ -17,6 +26,7 @@
         <!-- Sidebar -->
         <nav class="sidebar">
             <ul class="sidebar-menu">
+                <!-- Existing Sidebar Content -->
                 <div id="changing-text" class="fade"></div>
                 <li>
                     <div id="vertical-clock" class="clock">
@@ -42,7 +52,6 @@
                 </div>
             </header>
 
-
             <section id="about" class="about-section">
                 <div class="upload-camera-container">
                     <button id="uploadImageBtn" class="upload-button">Upload Image</button>
@@ -56,13 +65,11 @@
                     <div id="imagePreview" style="display: none;">
                         <h3 class="imagePreviews">Preview:</h3>
                         <img id="previewImage" src="" alt="Image Preview" style="max-width: 100%; height: auto;">
+                        <!-- Prediction Results -->
+                        <div id="prediction"></div>
                     </div>
-    
-                    
                 </div>
             </section>
-
-            
 
             <footer class="footer">
                 <div class="container">
@@ -71,6 +78,5 @@
             </footer>
         </div>
     </div>
-    <script src="../data/data.js"></script>
 </body>
 </html>
